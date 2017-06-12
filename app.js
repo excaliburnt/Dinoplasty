@@ -8,10 +8,37 @@ const app = {
       .querySelector(selectors.templateSelector)
     document
       .querySelector(selectors.formSelector)
-      .addEventListener('submit', this.addDino.bind(this))
+      .addEventListener('submit', this.addDinoFromForm.bind(this))
+
+    this.load()
   },
 
-  addDino(ev) {
+  load() {
+    // load the JSON from localStorage
+    const dinoJSON = localStorage.getItem('dinos')
+
+    // convert the JSON back into an array
+    const dinoArray = JSON.parse(dinoJSON)
+
+    // set this.dinos with the dinos from that array
+    if (dinoArray) {
+      dinoArray
+        .reverse()
+        .map(this.addDino.bind(this))
+    }
+  },
+
+  addDino(dino) {
+    const listItem = this.renderListItem(dino)
+    this.list.insertBefore(listItem, this.list.firstChild)
+
+    this.dinos.unshift(dino)
+    this.save()
+
+    ++ this.max
+  },
+
+  addDinoFromForm(ev) {
     ev.preventDefault()
 
     const dino = {
@@ -19,22 +46,46 @@ const app = {
       name: ev.target.dinoName.value,
     }
 
-    const listItem = this.renderListItem(dino)
-    this.list.insertBefore(listItem, this.list.firstChild)
-
-    this.dinos.unshift(dino)
-
-    ++ this.max
+    this.addDino(dino)
+    
     ev.target.reset()
   },
 
+  save() {
+    localStorage
+      .setItem('dinos', JSON.stringify(this.dinos))
+  },
+
   renderListItem(dino) {
-    const item = document.createElement('li')
-    item.textContent = dino.name
+    const item = this.template.cloneNode(true)
+    item.classList.remove('template')
     item.dataset.id = dino.id
 
+    item
+      .querySelector('.dino-name')
+      .textContent = dino.name
+
+    item
+      .querySelector('button.remove')
+      .addEventListener('click', this.removeDino.bind(this))
+
     return item
-  }
+  },
+
+  removeDino(ev) {
+    const listItem = ev.target.closest('.dino')
+    listItem.remove()
+
+    for (let i = 0; i < this.dinos.length; i++) {
+      const currentId = this.dinos[i].id.toString()
+      if (listItem.dataset.id === currentId) {
+        this.dinos.splice(i, 1)
+        break;
+      }
+    }
+
+    this.save()
+  },
 }
 
 app.init({
